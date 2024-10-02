@@ -48,7 +48,7 @@ exports.fetchstorage = async (req, res) => {
         "userid",
         "email"
       );
-
+      console.log(org.storageused);
       res
         .status(200)
         .json({ success: true, storage, storageused: org.storageused });

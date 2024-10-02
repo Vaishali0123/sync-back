@@ -24,10 +24,8 @@ const upload = multer({ storage: storage });
 router.post("/v1/signup", upload.single("dp"), signup);
 router.post("/v1/signin", signin);
 router.post("/forgotpass", forgotpass);
-router.post("/updatedetails", updatedetails);
 router.get("/getmembers/:userid/:orgid", members);
 router.get("/getuserdata/:id", getuserdata);
-router.post("/v1/getuserdata/:id", getuserdatanew);
 
 // ayush's route
 
@@ -36,6 +34,8 @@ router.post("/signin", login);
 router.post("/signup", upload.any(), signupnew);
 router.post("/signupind", upload.single("dp"), signupind);
 router.get("/fetchAllOrganisation", fetchAllOrganisation);
+router.post("/v1/getuserdata/:id", getuserdatanew);
 router.post("/checkInviteCode/:orgid", checkInviteCode);
+router.post("/updatedetails", upload.single("dp"), updatedetails);
 
 module.exports = router;

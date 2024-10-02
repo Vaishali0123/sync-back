@@ -343,28 +343,6 @@ exports.signin = async (req, res) => {
   }
 };
 
-//update details
-exports.updatedetails = async (req, res) => {
-  try {
-    const { id, email, password, role, name } = req.body;
-    const user = await User.findById(id);
-    if (user) {
-      await User.updateOne(
-        { _id: user._id },
-        {
-          $set: { email: email, password: password, jobrole: role, name: name },
-        }
-      );
-      res.status(200).json({ success: true });
-    } else {
-      res.status(404).json({ success: false });
-    }
-  } catch (e) {
-    console.log(e);
-    res.status(400).json({ success: false });
-  }
-};
-
 // get userdata
 exports.getuserdata = async (req, res) => {
   try {
@@ -390,13 +368,26 @@ exports.getuserdatanew = async (req, res) => {
     const { id } = req.params;
     const { orgid } = req.body;
     const user = await User.findById(id);
-    const org = await Organization.findById(orgid);
 
-    const code = org.code;
+    let code;
+    let creator;
+
+    if (orgid) {
+      const org = await Organization.findById(orgid);
+      code = org.code;
+      creator = org.creator;
+    }
+
     if (user) {
       console.log(user?.dp);
       const profile = process.env.URL + user?.dp;
-      res.status(200).json({ success: true, user, profile, code });
+      res.status(200).json({
+        success: true,
+        user,
+        profile,
+        code,
+        showCode: creator?.toString() === id ? true : false,
+      });
     } else {
       res.status(304).json({ success: false });
     }
@@ -726,6 +717,63 @@ exports.signupnew = async (req, res) => {
       refresh_token,
       organisations: savedUser.organization ? [organization] : [],
     });
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({ success: false });
+  }
+};
+
+//update details
+exports.updatedetails = async (req, res) => {
+  try {
+    const { id, email, password, role, name } = req.body;
+    const user = await User.findById(id);
+
+    if (user) {
+      if (req.file) {
+        const file = req.file;
+        const uuidString = uuid();
+        const objectName = `${Date.now()}_${uuidString}_${file.originalname}`;
+
+        // Upload the file to S3
+        await s3.send(
+          new PutObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: objectName,
+            Body: file.buffer,
+            ContentType: file.mimetype,
+          })
+        );
+        await User.updateOne(
+          { _id: user._id },
+          {
+            $set: {
+              email: email,
+              password: password,
+              jobrole: role,
+              name: name,
+              dp: objectName,
+            },
+          }
+        );
+      } else {
+        await User.updateOne(
+          { _id: user._id },
+          {
+            $set: {
+              email: email,
+              password: password,
+              jobrole: role,
+              name: name,
+            },
+          }
+        );
+      }
+
+      res.status(200).json({ success: true });
+    } else {
+      res.status(404).json({ success: false });
+    }
   } catch (e) {
     console.log(e);
     res.status(400).json({ success: false });
